@@ -11,3 +11,6 @@ export const options = {
 }
 
 export const ERR_OK = 0
+
+export const G_UID = 3434438386
+export const CID = 205361747

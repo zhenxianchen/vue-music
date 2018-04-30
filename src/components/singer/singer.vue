@@ -1,6 +1,7 @@
 <template>
   <div class="singer">
-      歌手
+      <list-view :data="singers" @select="selectSinger"></list-view>
+      <router-view></router-view>
   </div>
 </template>
 
@@ -8,6 +9,8 @@
 import {getSingerList} from 'api/singer'
 import {ERR_OK} from 'api/config'
 import Singer from 'common/js/singer'
+import ListView from 'base/listview/listview'
+import {mapMutations} from 'vuex'
 
 const HOT_NAME = '热门'
 const HOT_SINGER_LEN = 10
@@ -23,18 +26,28 @@ export default {
     this._getSingerList()
   },
 
+  components: {
+    ListView
+  },
+
   methods: {
+    selectSinger(singer) {
+      this.$router.push({
+        path: `/singer/${singer.id}`
+      })
+      this.setSinger(singer)
+    },
+
     _getSingerList() {
       getSingerList().then((res) => {
         if (res.code === ERR_OK) {
-          this.singers = res.data.list
-          console.log(this._normalizeSinger(this.singers))
+          this.singers = this.normalizeSinger(res.data.list)
         }
       })
     },
 
     // 序列化接口数据，按首字母分组
-    _normalizeSinger(list) {
+    normalizeSinger(list) {
       let map = {
         hot: {
           title: HOT_NAME,
@@ -83,7 +96,11 @@ export default {
       })
 
       return hot.concat(ret)
-    }
+    },
+
+    ...mapMutations({
+      setSinger: 'SET_SINGER'
+    })
   }
 }
 </script>
