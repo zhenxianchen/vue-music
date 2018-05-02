@@ -23,6 +23,7 @@ export function getData(el, name, val) {
 
 let elementStyle = document.createElement('div').style
 
+// 浏览器支持的css属性
 let vendor = (() => {
   let transformNames = {
     webkit: 'webkitTransform',
