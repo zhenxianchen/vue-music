@@ -6,7 +6,7 @@
     <h1 class="title" v-html="title"></h1>
     <div class="bg-image" :style="bgStyle" ref="bgImage">
       <div class="play-wrapper">
-        <div ref="playBtn" v-show="songs.length>0" class="play">
+        <div ref="playBtn" v-show="songs.length>0" class="play" @click="random">
           <i class="icon-play"></i>
           <span class="text">随机播放全部</span>
         </div>
@@ -20,7 +20,7 @@
     <scroll :data="songs"  @scroll="scroll"
             :listen-scroll="listenScroll" :probe-type="probeType" class="list" ref="list">
       <div class="song-list-wrapper">
-        <song-list :songs="songs" :rank="rank" ></song-list>
+        <song-list :songs="songs" :rank="rank" @select="selectItem"></song-list>
       </div>
       <div v-show="!songs.length" class="loading-container">
         <loading></loading>
@@ -35,7 +35,7 @@ import Loading from 'base/loading/loading'
 import SongList from 'base/song-list/song-list'
 import {prefixStyle} from 'common/js/dom'
 // import {playlistMixin} from 'common/js/mixin'
-// import {mapActions} from 'vuex'
+import {mapActions} from 'vuex'
 
 const RESERVED_HEIGHT = 40 // 预留的头部高度
 const transform = prefixStyle('transform')
@@ -104,11 +104,11 @@ export default {
       this.randomPlay({
         list: this.songs
       })
-    }
-    // ...mapActions([
-    //   'selectPlay',
-    //   'randomPlay'
-    // ])
+    },
+    ...mapActions([
+      'selectPlay',
+      'randomPlay'
+    ])
   },
   watch: {
     scrollY(newVal) {
