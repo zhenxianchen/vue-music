@@ -45,6 +45,7 @@ module.exports = {
 
   build: {
     env: require('./prod.env'),
+    port: 3000,
     // Template for index.html
     index: path.resolve(__dirname, '../dist/index.html'),
 

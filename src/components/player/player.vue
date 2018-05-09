@@ -70,7 +70,7 @@
               <i @click="next" class="icon-next"></i>
             </div>
             <div class="icon i-right">
-              <i  class="icon" ></i>
+              <i  class="icon" :class="getFavoriteIcon(currentSong)" @click="toggleFavorite(currentSong)"></i>
             </div>
           </div>
         </div>
@@ -90,13 +90,13 @@
            <i :class="miniIcon" class="icon-mini" @click.stop="togglePlaying"></i>
           </progress-circle>
         </div>
-        <div class="control" >
+        <div class="control" @click.stop="showPlaylist">
           <i class="icon-playlist"></i>
         </div>
       </div>
     </transition>
-    <!-- <playlist ref="playlist"></playlist> -->
-    <audio ref="audio" @canplay="ready" @error="error" @timeupdate="updateTime" @ended="end"></audio>
+    <playlist ref="playlist"></playlist>
+    <audio ref="audio" @play="ready" @error="error" @timeupdate="updateTime" @ended="end"></audio>
   </div>
 </template>
 
@@ -107,18 +107,17 @@ import {prefixStyle} from 'common/js/dom'
 import ProgressBar from 'base/progress-bar/progress-bar'
 import ProgressCircle from 'base/progress-circle/progress-circle'
 import {playMode} from 'common/js/config'
-import {shuffle} from 'common/js/util'
 import Lyric from 'lyric-parser'
 import Scroll from 'base/scroll/scroll'
-// import {playerMixin} from 'common/js/mixin'
-// import Playlist from 'components/playlist/playlist'
+import {playerMixin} from 'common/js/mixin'
+import Playlist from 'components/playlist/playlist'
 import {getSongVkey} from 'api/song'
 
 const transform = prefixStyle('transform')
 const transitionDuration = prefixStyle('transitionDuration')
 
 export default {
-//   mixins: [playerMixin],
+  mixins: [playerMixin],
   data() {
     return {
       songReady: false,
@@ -147,32 +146,10 @@ export default {
     percent() {
       return this.currentTime / this.currentSong.duration
     },
-    iconMode() {
-      let mode = ''
-      switch (this.mode) {
-        case playMode.sequence:
-          mode = 'icon-sequence'
-          break
-        case playMode.loop:
-          mode = 'icon-loop'
-          break
-        case playMode.random: 
-          mode = 'icon-random'
-          break
-        default:
-          mode = ''
-          break
-      }
-      return mode
-    },
     ...mapGetters([
       'currentIndex',
-      'currentSong',
       'fullScreen',
-      'playlist',
-      'playing',
-      'mode',
-      'sequenceList'
+      'playing'
     ])
   },
   created() {
@@ -240,6 +217,7 @@ export default {
       this.setPlayingState(!this.playing)
 
       if (this.currentLyric) {
+        console.log('lyric toggle')
         this.currentLyric.togglePlay()
       }
     },
@@ -311,7 +289,7 @@ export default {
     // 歌曲可播放时
     ready() {
       this.songReady = true
-      // this.savePlayHistory(this.currentSong)
+      this.savePlayHistory(this.currentSong)
     },
 
     // 兼容加载失败时功能失效的情况
@@ -347,29 +325,6 @@ export default {
       }
     },
 
-    changeMode() {
-      let mode = (this.mode + 1) % 3
-      this.setPlayMode(mode)
-
-      let list = null
-      if (mode === playMode.random) {
-        list = shuffle(this.sequenceList)
-      } else {
-        list = this.sequenceList
-      }
-
-      this.resetCurrentIndex(list)
-      this.setPlayList(list)
-    },
-
-    resetCurrentIndex(list) {
-      let index = list.findIndex((item) => {
-        return item.id === this.currentSong.id
-      })
-
-      this.setCurrentIndex(index)
-    },
-
     getLyric() {
       this.currentSong.getLyric().then((lyric) => {
         if (this.currentSong.lyric !== lyric) {
@@ -377,7 +332,6 @@ export default {
         }
 
         this.currentLyric = new Lyric(lyric, this.handleLyric)
-        console.log(this.currentLyric)
         if (this.playing) {
           this.currentLyric.play()
         }
@@ -399,9 +353,11 @@ export default {
       }
       this.playingLyric = txt
     },
-    // showPlaylist() {
-    //   this.$refs.playlist.show()
-    // },
+
+    showPlaylist() {
+      this.$refs.playlist.show()
+    },
+
     middleTouchStart(e) {
       this.touch.initiated = true
       const touch = e.touches[0]
@@ -491,15 +447,11 @@ export default {
     },
 
     ...mapMutations({
-      setFullScreen: 'SET_FULL_SCREEN',
-      setPlayingState: 'SET_PLAYING_STATE',
-      setCurrentIndex: 'SET_CURRENT_INDEX',
-      setPlayMode: 'SET_PLAY_MODE',
-      setPlayList: 'SET_PLAYLIST'
-    })
-    // ...mapActions([
-    //   'savePlayHistory'
-    // ])
+      setFullScreen: 'SET_FULL_SCREEN'
+    }),
+    ...mapActions([
+      'savePlayHistory'
+    ])
   },
   watch: {
     currentSong(newSong, oldSong) {
@@ -540,8 +492,8 @@ export default {
   components: {
     ProgressBar,
     ProgressCircle,
-    Scroll
-    // Playlist
+    Scroll,
+    Playlist
   }
 }
 </script>
