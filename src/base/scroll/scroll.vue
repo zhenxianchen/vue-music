@@ -24,6 +24,15 @@ export default {
     listenScroll: {
       type: Boolean,
       default: false
+    },
+    // 上拉刷新
+    pullup: {
+      type: Boolean,
+      default: false
+    },
+    beforeScroll: {
+      type: Boolean,
+      default: false
     }
   },
 
@@ -50,19 +59,22 @@ export default {
         })
       }
 
-      // if (this.pullup) {
-      //   this.scroll.on('scrollEnd', () => {
-      //     if (this.scroll.y <= (this.scroll.maxScrollY + 50)) {
-      //       this.$emit('scrollToEnd')
-      //     }
-      //   })
-      // }
+      // 上拉刷新，滚动到底部时派发事件scrollToEnd
+      if (this.pullup) {
+        // 滚动结束时，better-scroll会派发scrollEnd事件
+        this.scroll.on('scrollEnd', () => {
+          // 判断是否滚动到底部
+          if (this.scroll.y <= (this.scroll.maxScrollY + 50)) {
+            this.$emit('scrollToEnd')
+          }
+        })
+      }
 
-      // if (this.beforeScroll) {
-      //   this.scroll.on('beforeScrollStart', () => {
-      //     this.$emit('beforeScroll')
-      //   })
-      // }
+      if (this.beforeScroll) {
+        this.scroll.on('beforeScrollStart', () => {
+          this.$emit('beforeScroll')
+        })
+      }
     },
 
     disable() {

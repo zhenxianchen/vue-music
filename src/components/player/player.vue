@@ -18,7 +18,9 @@
           <h2 class="subtitle" v-html="currentSong.singer"></h2>
         </div>
         <div class="middle"
-            
+            @touchstart.prevent="middleTouchStart"
+            @touchmove.prevent="middleTouchMove"
+            @touchend="middleTouchEnd"
         >
           <div class="middle-l" ref="middleL">
             <div class="cd-wrapper" ref="cdWrapper">
@@ -27,23 +29,25 @@
               </div>
             </div>
             <div class="playing-lyric-wrapper">
-              <div class="playing-lyric"></div>
+              <div class="playing-lyric">{{playingLyric}}</div>
             </div>
           </div>
-          <scroll class="middle-r" ref="lyricList" >
+          <scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
             <div class="lyric-wrapper">
-              <!-- <div v-if="currentLyric">
-                <p ref="lyricLine"
+              <div v-if="currentLyric">
+                 <p ref="lyricLine"
                    class="text"
-                   ></p>
-              </div> -->
+                   :class="{'current': currentLineNum ===index}"
+                   v-for="(line,index) in currentLyric.lines"
+                   :key="index">{{line.txt}}</p>
+              </div>
             </div>
           </scroll>
         </div>
         <div class="bottom">
           <div class="dot-wrapper">
-            <span class="dot" ></span>
-            <span class="dot" ></span>
+            <span class="dot" :class="{'active':currentShow==='cd'}"></span>
+            <span class="dot" :class="{'active':currentShow==='lyric'}"></span>
           </div>
           <div class="progress-wrapper">
             <span class="time time-l">{{format(currentTime)}}</span>
@@ -111,7 +115,7 @@ import Scroll from 'base/scroll/scroll'
 import {getSongVkey} from 'api/song'
 
 const transform = prefixStyle('transform')
-// const transitionDuration = prefixStyle('transitionDuration')
+const transitionDuration = prefixStyle('transitionDuration')
 
 export default {
 //   mixins: [playerMixin],
@@ -120,10 +124,10 @@ export default {
       songReady: false,
       currentTime: 0, // 当前歌曲播放时间
       radius: 32,
-      currentLyric: null
-      // currentLineNum: 0,
-      // currentShow: 'cd',
-      // playingLyric: ''
+      currentLyric: null,
+      currentLineNum: 0,
+      currentShow: 'cd',
+      playingLyric: ''
     }
   },
 
@@ -253,15 +257,17 @@ export default {
       this.$refs.audio.currentTime = 0
       this.$refs.audio.play()
       this.setPlayingState(true)
-      // if (this.currentLyric) {
-      //   this.currentLyric.seek(0)
-      // }
+      
+      if (this.currentLyric) {
+        this.currentLyric.seek(0)
+      }
     },
     next() {
       if (!this.songReady) {
         return
       }
 
+      // 播放列表只有一条歌曲
       if (this.playlist.length === 1) {
         this.loop()
         return
@@ -334,9 +340,11 @@ export default {
       if (!this.playing) {
         this.togglePlaying()
       }
-      // if (this.currentLyric) {
-      //   this.currentLyric.seek(currentTime * 1000)
-      // }
+
+      // 毫秒
+      if (this.currentLyric) {
+        this.currentLyric.seek(currentTime * 1000)
+      }
     },
 
     changeMode() {
@@ -379,72 +387,82 @@ export default {
         this.currentLineNum = 0
       })
     },
-    // handleLyric({lineNum, txt}) {
-    //   this.currentLineNum = lineNum
-    //   if (lineNum > 5) {
-    //     let lineEl = this.$refs.lyricLine[lineNum - 5]
-    //     this.$refs.lyricList.scrollToElement(lineEl, 1000)
-    //   } else {
-    //     this.$refs.lyricList.scrollTo(0, 0, 1000)
-    //   }
-    //   this.playingLyric = txt
-    // },
+
+    handleLyric({lineNum, txt}) {
+      this.currentLineNum = lineNum
+      // 让高亮歌词保持在中间
+      if (lineNum > 5) {
+        let lineEl = this.$refs.lyricLine[lineNum - 5]
+        this.$refs.lyricList.scrollToElement(lineEl, 1000)
+      } else {
+        this.$refs.lyricList.scrollTo(0, 0, 1000) // 滚动到顶部
+      }
+      this.playingLyric = txt
+    },
     // showPlaylist() {
     //   this.$refs.playlist.show()
     // },
-    // middleTouchStart(e) {
-    //   this.touch.initiated = true
-    //   const touch = e.touches[0]
-    //   this.touch.startX = touch.pageX
-    //   this.touch.startY = touch.pageY
-    // },
-    // middleTouchMove(e) {
-    //   if (!this.touch.initiated) {
-    //     return
-    //   }
-    //   const touch = e.touches[0]
-    //   const deltaX = touch.pageX - this.touch.startX
-    //   const deltaY = touch.pageY - this.touch.startY
-    //   if (Math.abs(deltaY) > Math.abs(deltaX)) {
-    //     return
-    //   }
-    //   const left = this.currentShow === 'cd' ? 0 : -window.innerWidth
-    //   const offsetWidth = Math.min(0, Math.max(-window.innerWidth, left + deltaX))
-    //   this.touch.percent = Math.abs(offsetWidth / window.innerWidth)
-    //   this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px,0,0)`
-    //   this.$refs.lyricList.$el.style[transitionDuration] = 0
-    //   this.$refs.middleL.style.opacity = 1 - this.touch.percent
-    //   this.$refs.middleL.style[transitionDuration] = 0
-    // },
-    // middleTouchEnd() {
-    //   let offsetWidth
-    //   let opacity
-    //   if (this.currentShow === 'cd') {
-    //     if (this.touch.percent > 0.1) {
-    //       offsetWidth = -window.innerWidth
-    //       opacity = 0
-    //       this.currentShow = 'lyric'
-    //     } else {
-    //       offsetWidth = 0
-    //       opacity = 1
-    //     }
-    //   } else {
-    //     if (this.touch.percent < 0.9) {
-    //       offsetWidth = 0
-    //       this.currentShow = 'cd'
-    //       opacity = 1
-    //     } else {
-    //       offsetWidth = -window.innerWidth
-    //       opacity = 0
-    //     }
-    //   }
-    //   const time = 300
-    //   this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px,0,0)`
-    //   this.$refs.lyricList.$el.style[transitionDuration] = `${time}ms`
-    //   this.$refs.middleL.style.opacity = opacity
-    //   this.$refs.middleL.style[transitionDuration] = `${time}ms`
-    //   this.touch.initiated = false
-    // },
+    middleTouchStart(e) {
+      this.touch.initiated = true
+      const touch = e.touches[0]
+      this.touch.startX = touch.pageX
+      this.touch.startY = touch.pageY
+    },
+    middleTouchMove(e) {
+      if (!this.touch.initiated) {
+        return
+      }
+      const touch = e.touches[0]
+      const deltaX = touch.pageX - this.touch.startX
+      const deltaY = touch.pageY - this.touch.startY
+
+      // 认为是纵向滚动，不切换
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        return
+      }
+
+      // 歌词距离屏幕右侧的宽度
+      const left = this.currentShow === 'cd' ? 0 : -window.innerWidth
+
+      // 左滑的时候deltaX是一个负值
+      const offsetWidth = Math.min(0, Math.max(-window.innerWidth, left + deltaX)) // 最大不能超过0
+      this.touch.percent = Math.abs(offsetWidth / window.innerWidth)
+      this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px,0,0)` // this.$refs.lyricList是一个vue组件，不能直接操作dom
+      this.$refs.lyricList.$el.style[transitionDuration] = 0
+      this.$refs.middleL.style.opacity = 1 - this.touch.percent
+      this.$refs.middleL.style[transitionDuration] = 0
+    },
+    middleTouchEnd() {
+      let offsetWidth
+      let opacity
+
+      // 滑动距离超过10%，就切换cd和歌词
+      if (this.currentShow === 'cd') {
+        if (this.touch.percent > 0.1) {
+          offsetWidth = -window.innerWidth
+          opacity = 0
+          this.currentShow = 'lyric'
+        } else {
+          offsetWidth = 0
+          opacity = 1
+        }
+      } else { 
+        if (this.touch.percent < 0.9) {
+          offsetWidth = 0
+          this.currentShow = 'cd'
+          opacity = 1
+        } else {
+          offsetWidth = -window.innerWidth
+          opacity = 0
+        }
+      }
+      const time = 300
+      this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px,0,0)`
+      this.$refs.lyricList.$el.style[transitionDuration] = `${time}ms`
+      this.$refs.middleL.style.opacity = opacity
+      this.$refs.middleL.style[transitionDuration] = `${time}ms`
+      this.touch.initiated = false
+    },
 
     // 个位数转换十位数
     _pad(num, n = 2) {
@@ -491,16 +509,20 @@ export default {
       if (newSong.id === oldSong.id) {
         return
       }
-      // if (this.currentLyric) {
-      //   this.currentLyric.stop()
-      //   this.currentTime = 0
-      //   this.playingLyric = ''
-      //   this.currentLineNum = 0
-      // }
+
+      // 切换歌曲时候，关闭歌词的定时器
+      if (this.currentLyric) {
+        this.currentLyric.stop()
+        this.currentTime = 0
+        this.playingLyric = ''
+        this.currentLineNum = 0
+      }
       getSongVkey(newSong.mid).then((res) => {
         let vkey = res.data.items[0].vkey
         this.$refs.audio.src = `http://dl.stream.qqmusic.qq.com/C400${newSong.mid}.m4a?vkey=${vkey}&guid=3434438386&uin=0&fromtag=66`
       })
+
+      // 兼容微信，从后台切换到前端js不执行的情况
       clearTimeout(this.timer)
       this.timer = setTimeout(() => {
         this.$refs.audio.play()

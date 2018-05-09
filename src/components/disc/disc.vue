@@ -6,21 +6,21 @@
 
 <script type="text/ecmascript-6">
 import MusicList from 'components/music-list/music-list'
-import {getSingerDetail} from 'api/singer'
+import {getSongList} from 'api/recommend'
 import {ERR_OK} from 'api/config'
-import {createSong} from 'common/js/song'
 import {mapGetters} from 'vuex'
+import {createSong} from 'common/js/song'
 
 export default {
   computed: {
     title() {
-      return this.singer.name
+      return this.disc.dissname
     },
     bgImage() {
-      return this.singer.avatar
+      return this.disc.imgurl
     },
     ...mapGetters([
-      'singer'
+      'disc'
     ])
   },
   data() {
@@ -28,30 +28,24 @@ export default {
       songs: []
     }
   },
-
   created() {
-    this._getDetail()
+    this._getSongList()
   },
-
   methods: {
-    _getDetail() {
-      // 在歌手详情页刷新不会触发状态更新，singerid没有值，重定向到歌手列表
-      if (!this.singer.id) {
-        this.$router.push('/singer')
+    _getSongList() {
+      if (!this.disc.dissid) {
+        this.$router.push('/recommend')
         return
       }
-
-      getSingerDetail(this.singer.id).then((res) => {
+      getSongList(this.disc.dissid).then((res) => {
         if (res.code === ERR_OK) {
-          this.songs = this._normalizeSongs(res.data.list)
+          this.songs = this._normalizeSongs(res.cdlist[0].songlist)
         }
       })
     },
-  
     _normalizeSongs(list) {
       let ret = []
-      list.forEach((item) => {
-        let {musicData} = item
+      list.forEach((musicData) => {
         if (musicData.songid && musicData.albummid) {
           ret.push(createSong(musicData))
         }
@@ -59,7 +53,6 @@ export default {
       return ret
     }
   },
-
   components: {
     MusicList
   }

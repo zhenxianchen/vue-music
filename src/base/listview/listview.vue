@@ -117,6 +117,10 @@ export default {
       this._scrollTo(anchorIndex)
     },
 
+    refresh() {
+      this.$refs.listview.refresh()
+    },
+
     // scroll组件上的scroll事件，获取滚动的y坐标
     scroll(pos) {
       this.scrollY = pos.y
